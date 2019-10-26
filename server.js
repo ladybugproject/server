@@ -24,7 +24,7 @@ app.get('/prfinfo', (req, res) => {
     .catch(err => {
         const stat = [];
         stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'error':err.message});
         res.status(200).json(stat);
     });
 });
@@ -39,7 +39,7 @@ app.get('/plcinfo', (req, res) => {
     .catch(err => {
         const stat = [];
         stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'error':err.message});
     });
 });
 
@@ -53,7 +53,7 @@ app.get('/test', (req, res) => {
     .catch(err => {
         const stat = [];
         stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'error':err.message});
         res.status(200).json(stat);
     });
 });
@@ -75,7 +75,7 @@ app.get('/performance-ids', (req, res) => {
     .catch(err => {
         const stat = [];
         stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'error':err.message});
         res.status(200).json(stat);
     });
 });
@@ -144,7 +144,7 @@ app.post('/signup', (req, res) => {
     .catch(err => {
         const stat = [];
         stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'error':err.message});
         res.status(200).json(stat);
     });
 });
@@ -164,10 +164,9 @@ app.get('/checkID', (req, res) => {
         res.status(200).json(results);
     })
     .catch(err => {
-        console.log(err);
         const stat = [];
         stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'error':err.message});
         res.status(200).json(stat);
     });
 });
@@ -190,7 +189,7 @@ app.post('/login', (req, res) => {
     .catch(err => {
         const stat = [];
         stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'error':err.message});
         res.status(200).json(stat);
     });
 });
@@ -214,7 +213,7 @@ app.get('/recommendation', (req, res) => {
     .catch(err => {
         const stat = [];
         stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'error':err.message});
         res.status(200).json(stat);
     });
 });
@@ -228,7 +227,7 @@ app.post('/recommendation', (req, res) => {
 
     })
     .catch(err => {
-        console.error(err);
+
     });
 });
 
@@ -241,7 +240,8 @@ app.get('/playing/now', (req, res) => {
         limit: 5,
         where: {
             date_from: { [models.Op.lte]: new Date() },
-            date_to: { [models.Op.gte]: new Date() }
+            date_to: { [models.Op.gte]: new Date() },
+            poster: { [models.Op.not]: null }
         }
     })
     .then(result => {
@@ -253,7 +253,7 @@ app.get('/playing/now', (req, res) => {
     .catch(err => {
         const stat = [];
         stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'error':err.message});
         res.status(200).json(stat);
     });
 });
@@ -284,17 +284,16 @@ app.get('/searching', (req, res) => {
         res.status(200).json(results);
     })
     .catch(err => {
-        console.log(err);
         const stat = [];
         stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'error':err.message});
         res.status(200).json(stat);
     });
 });
 
 // 찜 목록 조회
 // req : 유저ID
-// res : 해당 유저의 찜목록
+// res : 200/해당 유저의 찜목록(리스트 형식) - 해당 유저가 있음, 400/error message - 기타 예외 상황
 app.get('/picking', (req, res) => {
     const uid = req.query.uid;
 
@@ -323,18 +322,17 @@ app.get('/picking', (req, res) => {
         }
     })
     .catch(err => {
-        console.log(err);
         const stat = [];
         stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'error':err.message});
         res.status(200).json(stat);
     });
 });
 
 // 찜 목록 추가
 // req: 유저ID, 찜한 공연ID
-// res: 
-app.post('/picking/insert', (req, res) => {
+// res: 201/Created - 삽입 성공 or 이미 있음, 403/Forbidden - 유저 정보 없음, 404/Not Found - 해당 공연이 없음, 400/error message - 기타 예외 상황
+app.post('/picking', (req, res) => {
     const uid = req.body.uid;
     const pid = req.body.pid;
 
@@ -342,47 +340,66 @@ app.post('/picking/insert', (req, res) => {
         attributes: ['picks'],
         where: { id: uid }
     })
-    .then(result => {
-        const currentPicks = result.dataValues.picks;
+    .then(user_result => {
+        const currentPicks = user_result.dataValues.picks;
 
-        if(currentPicks.includes(pid) === false) {
-            models.USER.update({
-                picks: currentPicks + ',' + pid
-            }, {
-                where: { id: uid }
-            })
-            .then(() => {
+        models.PRFINFO.findAll({
+            where: { prf_id: pid }
+        })
+        .then(prf_result => {
+            if(prf_result == false) {
                 const results = [];
-                results.push({'status':200});
-                results.push({'result':'success'});
+                results.push({'status':404});
+                results.push({'result':'Not Found'});
                 res.status(200).json(results);
-            })
-            .catch(err => {
-                const stat = [];
-                stat.push({'status':400});
-                stat.push({'error':err});
-                res.status(200).json(stat);
-            });
-        }
-        else {
+            }
+            else {
+                if(currentPicks.includes(pid) === false) {
+                    models.USER.update({
+                        picks: currentPicks + ',' + pid
+                    }, {
+                        where: { id: uid }
+                    })
+                    .then(() => {
+                        const results = [];
+                        results.push({'status':201});
+                        results.push({'result':'Created'});
+                        res.status(200).json(results);
+                    })
+                    .catch(err => {
+                        const stat = [];
+                        stat.push({'status':400});
+                        stat.push({'error':err.message});
+                        res.status(200).json(stat);
+                    });
+                }
+                else {
+                    const results = [];
+                    results.push({'status':201});
+                    results.push({'result':'Created'});
+                    res.status(200).json(results);
+                }
+            }
+        })
+        .catch(err => {
             const results = [];
-            results.push({'status':200});
-            results.push({'result':'already included'});
+            results.push({'status':400});
+            results.push({'error':err.message});
             res.status(200).json(results);
-        }
+        });
     })
     .catch(err => {
         const stat = [];
-        stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'status':403});
+        stat.push({'result':'Forbidden'});
         res.status(200).json(stat);
     });
 });
 
 // 찜 목록 추가
 // req: 유저ID, 찜한 공연ID
-// res: 
-app.post('/picking/delete', (req, res) => {
+// res: 200/Deleted - 삭제 성공 or 이미 없음, 403/Forbidden - 유저 정보 없음, 400/error message - 기타 예외 상황
+app.delete('/picking', (req, res) => {
     const uid = req.body.uid;
     const pid = req.body.pid;
 
@@ -403,27 +420,27 @@ app.post('/picking/delete', (req, res) => {
             .then(() => {
                 const results = [];
                 results.push({'status':200});
-                results.push({'result':'success'});
+                results.push({'result':'Deleted'});
                 res.status(200).json(results);
             })
             .catch(err => {
                 const stat = [];
                 stat.push({'status':400});
-                stat.push({'error':err});
+                stat.push({'error':err.message});
                 res.status(200).json(stat);
             });
         }
         else {
             const results = [];
             results.push({'status':200});
-            results.push({'result':'not include'});
+            results.push({'result':'Deleted'});
             res.status(200).json(results);
         }
     })
     .catch(err => {
         const stat = [];
-        stat.push({'status':400});
-        stat.push({'error':err});
+        stat.push({'status':403});
+        stat.push({'result':'Forbidden'});
         res.status(200).json(stat);
     });
 });
