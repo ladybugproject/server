@@ -58,6 +58,13 @@ const PRFINFO_CLONE = sequelize.define('PRFINFO_CLONE', {
     plc_name: { field: 'FCLTYNM', type: Sequelize.STRING(2000) }
 });
 
+const PRFINFO_TEMP = sequelize.define('PRFINFO_TEMP', {
+    prf_id: { field:'MT20ID', type: Sequelize.STRING(8), primaryKey: true, allowNull: false },
+    cast_profile: { field: 'PRFCASTS', type: Sequelize.STRING(5000) },
+    synopsis: { field: 'SYNOPSIS', type: Sequelize.STRING(5000) },
+    review: { field: 'REVIEW', type: Sequelize.STRING(5000) }
+});
+
 const PLCINFO = sequelize.define('PLCINFO', {
     plc_id: { field:'MT10ID', type: Sequelize.STRING(8), primaryKey: true, allowNull: false },
     plc_name: { field: 'FCLTYNM', type: Sequelize.STRING(100) },
@@ -79,6 +86,7 @@ db.Op = Sequelize.Op;
 db.USER = USER;
 db.PRFINFO = PRFINFO;
 db.PRFINFO_CLONE = PRFINFO_CLONE;
+db.PRFINFO_TEMP = PRFINFO_TEMP;
 db.PLCINFO = PLCINFO;
 
 module.exports = db;

@@ -11,7 +11,7 @@ const port = process.env.PORT || 3000;
 
 // status는 무조건 200으로, 실제 status는 같이 보내기
 app.get('/', (req, res, next) => {
-    res.send('Test~~~');
+    res.send('[오머나]오늘 머해 나가자! - API Server');
 });
 
 // PRFINFO test
@@ -258,11 +258,37 @@ app.get('/playing/now', (req, res) => {
     });
 });
 
+// 임시로 만들어 둔 코드
+app.get('/playing/recommendation', (req, res) => {
+    models.PRFINFO.findAll({
+        order: [['prf_id', 'DESC']],
+        offset: 2,
+        limit: 5,
+        where: {
+            date_from: { [models.Op.lte]: new Date() },
+            date_to: { [models.Op.gte]: new Date() },
+            poster: { [models.Op.not]: null }
+        }
+    })
+    .then(result => {
+        const results = [];
+        results.push({'status':200});
+        results.push({'result':result.reverse()});
+        res.status(200).json(results);
+    })
+    .catch(err => {
+        const stat = [];
+        stat.push({'status':400});
+        stat.push({'error':err.message});
+        res.status(200).json(stat);
+    });
+});
+
 // 검색
 // req : 검색 키워드(공연 제목, 공연 장소, 배우), 시작 index, 마지막 index + 1
 // res : 검색 결과
 app.get('/prfinfo', (req, res) => {
-    const keyword = req.query.keyword;
+    const keyword = req.query.keyword.replace(/ /gi, "");
     const startFrom = parseInt(req.query.startFrom);
     const endTo = parseInt(req.query.endTo);
 
@@ -286,6 +312,95 @@ app.get('/prfinfo', (req, res) => {
 
         results.push({'status':200});
         results.push({'result':datas});
+        res.status(200).json(results);
+    })
+    .catch(err => {
+        const stat = [];
+        stat.push({'status':400});
+        stat.push({'error':err.message});
+        res.status(200).json(stat);
+    });
+});
+
+app.get('/prfinfo/:pid', (req, res) => {
+    const pid = req.params.pid;
+
+    models.sequelize.query("SELECT PI.MT20ID AS prf_id, PI.MT10ID AS plc_id, PI.PRFNM AS prf_name, PI.PRFPDFROM AS date_from, PI.PRFPDTO AS date_to, " +
+    "PI.FCLTYNM AS plc_name, PI.PRFCAST AS cast, PIT.PRFCASTS AS cast_profile, PI.FCFCREW AS crew, PI.PRFRUNTIME AS runtime, PI.PRFAGE AS age, " +
+    "PI.ENTRPSNM AS enterprise, PI.PCSEGUIDANCE AS price, PI.POSTER AS poster, PI.GENRENM AS genre, PI.PRFSTATE AS state, PI.OPENRUN AS openrun, PI.DTGUIDANCE AS prf_time, " +
+    "PIT.SYNOPSIS AS synopsis, PIT.REVIEW AS review FROM PRFINFO AS PI LEFT JOIN PRFINFO_TEMP AS PIT ON PI.MT20ID=PIT.MT20ID WHERE PI.MT20ID='" + pid + "';")
+    .then(result => {
+        const results = [];
+
+        const profiles = result[0][0].cast_profile.split('\n');
+        const cast_profile = [];
+        for(let i=0; i<profiles.length/2; i++) {
+            const new_profile = {};
+            new_profile.name = profiles[i*2];
+            new_profile.profile = profiles[i*2+1];
+
+            cast_profile.push(new_profile);
+        }
+        result[0][0].cast_profile = cast_profile;
+
+        result[0][0].synopsis = result[0][0].synopsis.replace(/\n/gi, " ");
+
+        const reviews = result[0][0].review.split('\n');
+        const review = [];
+        for(let i=0; i<reviews.length/2; i++) {
+            const new_review = {};
+            new_review.score = parseInt(reviews[i*2]);
+            new_review.comment = reviews[i*2+1];
+
+            review.push(new_review);
+        }
+        result[0][0].review = review;
+
+        results.push({'status':200});
+        results.push({'result':result[0][0]});
+        res.status(200).json(results);
+    })
+    .catch(err => {
+        const stat = [];
+        stat.push({'status':400});
+        stat.push({'error':err.message});
+        res.status(200).json(stat);
+    });
+});
+
+app.get('/prfinfotest/:pid', (req, res) => {
+    const pid = req.params.pid;
+
+    models.PRFINFO_TEMP.findOne({
+        where: { prf_id: pid }
+    })
+    .then(result => {
+        const results = [];
+
+        const profiles = result.cast_profile.split('\n');
+        const cast_profile = [];
+        for(let i=0; i<profiles.length/2; i++) {
+            const new_profile = {};
+            new_profile.name = profiles[i*2];
+            new_profile.profile = profiles[i*2+1];
+
+            cast_profile.push(new_profile);
+        }
+        result.cast_profile = cast_profile;
+
+        const reviews = result.review.split('\n');
+        const review = [];
+        for(let i=0; i<reviews.length/2; i++) {
+            const new_review = {};
+            new_review.score = parseInt(reviews[i*2]);
+            new_review.comment = reviews[i*2+1];
+
+            review.push(new_review);
+        }
+        result.review = review;
+
+        results.push({'status':200});
+        results.push({'result':result});
         res.status(200).json(results);
     })
     .catch(err => {
