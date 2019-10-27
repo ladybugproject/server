@@ -368,49 +368,6 @@ app.get('/prfinfo/:pid', (req, res) => {
     });
 });
 
-app.get('/prfinfotest/:pid', (req, res) => {
-    const pid = req.params.pid;
-
-    models.PRFINFO_TEMP.findOne({
-        where: { prf_id: pid }
-    })
-    .then(result => {
-        const results = [];
-
-        const profiles = result.cast_profile.split('\n');
-        const cast_profile = [];
-        for(let i=0; i<profiles.length/2; i++) {
-            const new_profile = {};
-            new_profile.name = profiles[i*2];
-            new_profile.profile = profiles[i*2+1];
-
-            cast_profile.push(new_profile);
-        }
-        result.cast_profile = cast_profile;
-
-        const reviews = result.review.split('\n');
-        const review = [];
-        for(let i=0; i<reviews.length/2; i++) {
-            const new_review = {};
-            new_review.score = parseInt(reviews[i*2]);
-            new_review.comment = reviews[i*2+1];
-
-            review.push(new_review);
-        }
-        result.review = review;
-
-        results.push({'status':200});
-        results.push({'result':result});
-        res.status(200).json(results);
-    })
-    .catch(err => {
-        const stat = [];
-        stat.push({'status':400});
-        stat.push({'error':err.message});
-        res.status(200).json(stat);
-    });
-});
-
 // 찜 목록 조회
 // req : 유저ID
 // res : 200/해당 유저의 찜목록(리스트 형식) - 해당 유저가 있음, 400/error message - 기타 예외 상황
