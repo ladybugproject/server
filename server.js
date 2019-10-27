@@ -15,19 +15,19 @@ app.get('/', (req, res, next) => {
 });
 
 // PRFINFO test
-app.get('/prfinfo', (req, res) => {
-    models.PRFINFO.findAll({limit:21})
-    .then(results => {
-        results[0] = {'status':200};
-        res.status(200).json(results);
-    })
-    .catch(err => {
-        const stat = [];
-        stat.push({'status':400});
-        stat.push({'error':err.message});
-        res.status(200).json(stat);
-    });
-});
+// app.get('/prfinfo', (req, res) => {
+//     models.PRFINFO.findAll({limit:21})
+//     .then(results => {
+//         results[0] = {'status':200};
+//         res.status(200).json(results);
+//     })
+//     .catch(err => {
+//         const stat = [];
+//         stat.push({'status':400});
+//         stat.push({'error':err.message});
+//         res.status(200).json(stat);
+//     });
+// });
 
 // PLCINFO test
 app.get('/plcinfo', (req, res) => {
@@ -259,17 +259,22 @@ app.get('/playing/now', (req, res) => {
 });
 
 // 검색
-// req : 검색 키워드(공연 제목, 공연 장소, 배우)
+// req : 검색 키워드(공연 제목, 공연 장소, 배우), 시작 index, 마지막 index + 1
 // res : 검색 결과
-app.get('/searching', (req, res) => {
+app.get('/prfinfo', (req, res) => {
     const keyword = req.query.keyword;
+    const startFrom = parseInt(req.query.startFrom);
+    const endTo = parseInt(req.query.endTo);
 
     models.PRFINFO.findAll({
         where: {
             [models.Op.or]: { prf_name: { [models.Op.like]: '%' + keyword + '%' },
             cast: { [models.Op.like]: '%' + keyword + '%' },
-            plc_name: { [models.Op.like]: '%' + keyword + '%' } }
-        }
+            plc_name: { [models.Op.like]: '%' + keyword + '%' } },
+            poster: { [models.Op.not]: null }
+        },
+        offset: startFrom,
+        limit: endTo - startFrom
     })
     .then(result => {
         const results = [];
@@ -442,6 +447,40 @@ app.delete('/picking', (req, res) => {
         stat.push({'status':403});
         stat.push({'result':'Forbidden'});
         res.status(200).json(stat);
+    });
+});
+
+// PRFINFO -> PRFINFO_CLONE으로 데이터 복사를 위한 임시 배치 코드
+// 한 번에 많은 양을 하면 데이터가 누락되어 timeout이 있음
+// 3000단위로 옮기는 것을 권장
+app.post('/clone', (req, res) => {
+    models.PRFINFO.findAll({
+        attibutes: ['prf_id', 'prf_name', 'cast', 'plc_name']//,
+        //offset: 15000,
+        //limit: 3000
+    })
+    .then(result => {
+        result.forEach((element, index) => {
+            models.PRFINFO_CLONE.create({
+                prf_id: element.prf_id.replace(/ /gi, ""),
+                prf_name: element.prf_name.replace(/ /gi, ""),
+                cast: element.cast.replace(/ /gi, ""),
+                plc_name: element.plc_name.replace(/ /gi, "")
+            })
+            .then(() => {
+                if(index === result.length - 1) {
+                    res.status(200).json("Clone Success!");
+                }
+            })
+            .catch(err => {
+                console.log("second err");
+                console.log(err.message);
+            })
+        });
+    })
+    .catch(err => {
+        console.log("first err");
+        console.log(err.message);
     });
 });
 
