@@ -15,6 +15,7 @@ app.get('/', (req, res, next) => {
 });
 
 // PRFINFO test
+// 공연 20개의 정보
 // app.get('/prfinfo', (req, res) => {
 //     models.PRFINFO.findAll({limit:21})
 //     .then(results => {
@@ -30,34 +31,21 @@ app.get('/', (req, res, next) => {
 // });
 
 // PLCINFO test
-app.get('/plcinfo', (req, res) => {
-    models.PLCINFO.findAll({limit:11})
-    .then(results => {
-        results[0] = {'status':200};
-        res.status(200).json(results);
-    })
-    .catch(err => {
-        const stat = [];
-        stat.push({'status':400});
-        stat.push({'error':err.message});
-    });
-});
+// 공연 장소 10곳의 정보
+// app.get('/plcinfo', (req, res) => {
+//     models.PLCINFO.findAll({limit:11})
+//     .then(results => {
+//         results[0] = {'status':200};
+//         res.status(200).json(results);
+//     })
+//     .catch(err => {
+//         const stat = [];
+//         stat.push({'status':400});
+//         stat.push({'error':err.message});
+//     });
+// });
 
-// test
-app.get('/test', (req, res) => {
-    models.PRFINFO.findAll({limit:21})
-    .then(results => {
-        results[0] = {'status':200};
-        res.status(200).json(results);
-    })
-    .catch(err => {
-        const stat = [];
-        stat.push({'status':400});
-        stat.push({'error':err.message});
-        res.status(200).json(stat);
-    });
-});
-
+// 배치 API
 // req : X
 // res : 공연ID
 app.get('/performance-ids', (req, res) => {
@@ -80,6 +68,7 @@ app.get('/performance-ids', (req, res) => {
     });
 });
 
+// 배치 API
 // req : PRFINFO 모든 데이터
 // res : success/fail
 app.post('/performance-ids', (req, res) => {
@@ -122,6 +111,7 @@ app.post('/performance-ids', (req, res) => {
     });
 });
 
+// 회원가입 및 로그인 API
 // req : 유저ID, 유저PW, 나이, 성별, 선호장르1, 선호장르2, 선호장르3
 // res : 
 app.post('/signup', (req, res) => {
@@ -149,6 +139,7 @@ app.post('/signup', (req, res) => {
     });
 });
 
+// 회원가입 및 로그인 API
 // req : 유저ID
 // res : 
 app.get('/checkID', (req, res) => {
@@ -171,6 +162,7 @@ app.get('/checkID', (req, res) => {
     });
 });
 
+// 회원가입 및 로그인 API
 // req : 유저ID, 유저PW
 // res : 
 app.post('/login', (req, res) => {
@@ -194,6 +186,7 @@ app.post('/login', (req, res) => {
     });
 });
 
+// 추천 API
 // req : None
 // res : 공연ID, 공연명, 장르, 공연시설명
 app.get('/recommendation', (req, res) => {
@@ -218,6 +211,7 @@ app.get('/recommendation', (req, res) => {
     });
 });
 
+// 추천 API
 // 유저 별 추천 데이터
 // req : 유저ID(현재는 default)
 // res : 
@@ -258,7 +252,10 @@ app.get('/playing/now', (req, res) => {
     });
 });
 
-// 임시로 만들어 둔 코드
+// 추천 목록
+// req : X
+// res : 개인별 맞춤형 추천 공연 상위 5개
+// *현재는 임시로 만들어 둔 코드 -> 개인 별 상위 5개의 정보를 가질 경우 변경 예정*
 app.get('/playing/recommendation', (req, res) => {
     models.PRFINFO.findAll({
         order: [['prf_id', 'DESC']],
@@ -322,6 +319,9 @@ app.get('/prfinfo', (req, res) => {
     });
 });
 
+// 검색
+// req : /공연ID[파라미터]
+// res : 해당 공연 상세 정보
 app.get('/prfinfo/:pid', (req, res) => {
     const pid = req.params.pid;
 
