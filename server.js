@@ -9,7 +9,8 @@ app.use(express.json());
 const port = process.env.PORT || 3000;
 
 
-// status는 무조건 200으로, 실제 status는 같이 보내기
+// 예외상황에도 status는 200으로 넘김
+// 실제 status를 넘겨주는 데이터에 같이 보냄
 app.get('/', (req, res, next) => {
     res.send('[오머나]오늘 머해 나가자! - API Server');
 });
@@ -113,7 +114,8 @@ app.post('/performance-ids', (req, res) => {
 
 // 회원가입 및 로그인 API
 // req : 유저ID, 유저PW, 나이, 성별, 선호장르1, 선호장르2, 선호장르3
-// res : 
+// res : 성공 및 실패 여부
+// 비밀번호 보안 체크 검사에 대한 처리를 추가해야 함
 app.post('/signup', (req, res) => {
     const id = req.body.ID;
     const pw = req.body.PW;
@@ -123,6 +125,7 @@ app.post('/signup', (req, res) => {
     const favorite2 = req.body.FAVORITE2;
     const favorite3 = req.body.FAVORITE3;
 
+    // raw query
     models.sequelize.query("INSERT INTO USER(ID, PW, AGE, GENDER, FAVORITE1, FAVORITE2, FAVORITE3) VALUES('" +
     id + "', PASSWORD('" + pw + "'), " + age + ", '" + gender + "', '" + favorite1 + "', '" + favorite2 + "', '" + favorite3 + "');")
     .then(result => {
@@ -141,7 +144,7 @@ app.post('/signup', (req, res) => {
 
 // 회원가입 및 로그인 API
 // req : 유저ID
-// res : 
+// res : ID 중복 여부
 app.get('/checkID', (req, res) => {
     const uid = req.query.ID;
 
@@ -164,12 +167,13 @@ app.get('/checkID', (req, res) => {
 
 // 회원가입 및 로그인 API
 // req : 유저ID, 유저PW
-// res : 
+// res : 로그인 성공 여부
+// 로그인 성공 시, 실패 시 처리를 나누어야 함
 app.post('/login', (req, res) => {
     const id = req.body.ID;
     const pw = req.body.PW;
 
-    // 로그인 성공 시, 실패 시 처리를 나누어야 함
+    // raw query
     models.sequelize.query("SELECT COUNT(*) as COUNT FROM USER WHERE ID = '" +
     id + "' AND PW = PASSWORD('" + pw + "');")
     .then(result => {
@@ -325,6 +329,7 @@ app.get('/prfinfo', (req, res) => {
 app.get('/prfinfo/:pid', (req, res) => {
     const pid = req.params.pid;
 
+    // raw query
     models.sequelize.query("SELECT PI.MT20ID AS prf_id, PI.MT10ID AS plc_id, PI.PRFNM AS prf_name, PI.PRFPDFROM AS date_from, PI.PRFPDTO AS date_to, " +
     "PI.FCLTYNM AS plc_name, PI.PRFCAST AS cast, PIT.PRFCASTS AS cast_profile, PI.FCFCREW AS crew, PI.PRFRUNTIME AS runtime, PI.PRFAGE AS age, " +
     "PI.ENTRPSNM AS enterprise, PI.PCSEGUIDANCE AS price, PI.POSTER AS poster, PI.GENRENM AS genre, PI.PRFSTATE AS state, PI.OPENRUN AS openrun, PI.DTGUIDANCE AS prf_time, " +
